@@ -8,8 +8,7 @@ logger = logging.getLogger(__name__)
 
 @function_tool(
     name_override="get_booking_details",
-    description_override="Get booking details by confirmation number and update context.",
-    strict_json_schema=False  # Disable strict schema
+    description_override="Get booking details by confirmation number and update context."
 )
 async def get_booking_details(confirmation_number: str, context: AirlineAgentContext) -> str:
     """Get booking details by confirmation number and update context."""

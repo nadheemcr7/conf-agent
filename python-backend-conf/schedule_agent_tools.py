@@ -9,17 +9,16 @@ logger = logging.getLogger(__name__)
 
 @function_tool(
     name_override="get_conference_sessions",
-    description_override="Fetch conference sessions with filtering.",
-    strict_json_schema=False  # Disable strict schema
+    description_override="Fetch conference sessions with filtering."
 )
 async def get_conference_sessions(
     speaker_name: Optional[str] = None,
     topic: Optional[str] = None,
     conference_room_name: Optional[str] = None,
     track_name: Optional[str] = None,
-    conference_date: Optional[str] = None,  # Changed from date to str
-    time_range_start: Optional[str] = None,  # Changed from datetime to str
-    time_range_end: Optional[str] = None,  # Changed from datetime to str
+    conference_date: Optional[str] = None,
+    time_range_start: Optional[str] = None,
+    time_range_end: Optional[str] = None,
     limit: Optional[int] = None,
     context: Optional[AirlineAgentContext] = None
 ) -> str:
@@ -52,12 +51,15 @@ async def get_conference_sessions(
             logger.warning("❌ No conference sessions found")
             return "No conference sessions found matching the criteria."
         
-        result = f"Found {len(sessions)} conference sessions:\n"
+        result = f"Found {len(sessions)} conference sessions:\n\n"
         for i, session in enumerate(sessions[:5], 1):  # Show top 5
             result += (
-                f"{i}. **{session.get('topic')}** by {session.get('speaker_name')}\n"
-                f"   📅 {session.get('conference_date')} at {session.get('start_time')}\n"
-                f"   📍 {session.get('conference_room_name')} | Track: {session.get('track_name')}\n\n"
+                f"**{i}. {session.get('topic')}**\n"
+                f"   👤 Speaker: {session.get('speaker_name')}\n"
+                f"   📅 Date: {session.get('conference_date')}\n"
+                f"   🕐 Time: {session.get('start_time')}\n"
+                f"   📍 Room: {session.get('conference_room_name')}\n"
+                f"   🏷️ Track: {session.get('track_name')}\n\n"
             )
         if len(sessions) > 5:
             result += f"...and {len(sessions) - 5} more sessions available."
@@ -70,8 +72,7 @@ async def get_conference_sessions(
 
 @function_tool(
     name_override="get_all_speakers",
-    description_override="Get all unique speakers.",
-    strict_json_schema=False  # Disable strict schema
+    description_override="Get all unique speakers."
 )
 async def get_all_speakers(context: AirlineAgentContext) -> str:
     """Get all unique speakers."""
@@ -98,8 +99,7 @@ async def get_all_speakers(context: AirlineAgentContext) -> str:
 
 @function_tool(
     name_override="get_all_tracks",
-    description_override="Get all unique tracks.",
-    strict_json_schema=False  # Disable strict schema
+    description_override="Get all unique tracks."
 )
 async def get_all_tracks(context: AirlineAgentContext) -> str:
     """Get all unique tracks."""
@@ -126,8 +126,7 @@ async def get_all_tracks(context: AirlineAgentContext) -> str:
 
 @function_tool(
     name_override="get_all_rooms",
-    description_override="Get all unique rooms.",
-    strict_json_schema=False  # Disable strict schema
+    description_override="Get all unique rooms."
 )
 async def get_all_rooms(context: AirlineAgentContext) -> str:
     """Get all unique rooms."""
