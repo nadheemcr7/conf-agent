@@ -1,0 +1,16 @@
+openai-agents
+
+
+
+groq
+
+
+asyncpg
+
+
+fastapi
+uvicorn
+pydantic>=2.9.2
+python-dotenv
+supabase
+rapidfuzz
