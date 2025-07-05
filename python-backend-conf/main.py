@@ -72,7 +72,7 @@ CONFERENCE_TOOLS = [
 #         "professional, concise manner."
 #     ),
 #     tools=CUSTOMER_SERVICE_TOOLS,
-#     model="llama3-8b-8192"
+#     model="groq/llama3-8b-8192"
 # )
 
 conference_agent = Agent(
@@ -83,7 +83,7 @@ conference_agent = Agent(
         "If the user is not registered, suggest registration. Use the provided tools to fetch data and respond clearly."
     ),
     tools=CONFERENCE_TOOLS,
-    model="llama3-8b-8192"
+    model="groq/llama3-8b-8192"
 )
 
 # networking_agent = Agent(
@@ -95,7 +95,7 @@ conference_agent = Agent(
 #         "Respond professionally and concisely."
 #     ),
 #     tools=NETWORKING_TOOLS,
-#     model="llama3-8b-8192"
+#     model="groq/llama3-8b-8192"
 # )
 
 triage_agent = Agent(
@@ -109,7 +109,7 @@ triage_agent = Agent(
         "If the intent is unclear, ask for clarification. Do not execute tools directly; delegate to the appropriate agent."
     ),
     tools=[],
-    model="llama3-8b-8192"
+    model="groq/llama3-8b-8192"
 )
 
 async def create_context(

@@ -3,24 +3,24 @@ from typing import Optional
 
 # Intent mappings for agent routing
 SEMANTIC_MAPPINGS = {
-    "customer_service": {
-        "keywords": [
-            "flight", "booking", "cancel", "seat", "status", "check-in",
-            "reservation", "ticket", "change", "delay", "departure", "arrival"
-        ]
-    },
+    # "customer_service": {
+    #     "keywords": [
+    #         "flight", "booking", "cancel", "seat", "status", "check-in",
+    #         "reservation", "ticket", "change", "delay", "departure", "arrival"
+    #     ]
+    # },
     "conference": {
         "keywords": [
             "session", "speaker", "track", "room", "schedule", "conference",
-            "talk", "presentation", "event", "agenda", "summit"
+            "talk", "presentation", "event", "agenda", "summit", "aviation tech"
         ]
     },
-    "networking": {
-        "keywords": [
-            "business", "company", "networking", "profile", "industry",
-            "fintech", "tech", "startup", "register business"
-        ]
-    }
+    # "networking": {
+    #     "keywords": [
+    #         "business", "company", "networking", "profile", "industry",
+    #         "fintech", "tech", "startup", "register business"
+    #     ]
+    # }
 }
 
 # Fields that support fuzzy matching in database queries
@@ -29,7 +29,8 @@ FUZZY_FIELDS = {
     "users": ["user_name", "email", "registered_email"],
     "bookings": ["confirmation_number", "seat_number"],
     "flights": ["flight_number", "origin", "destination"],
-    "ib_businesses": ["companyName", "industrySector", "subSector", "location"]
+    "ib_businesses": ["companyName", "industrySector", "subSector", "location"],
+    "conference_schedules": ["speaker_name", "topic", "conference_room_name", "track_name"]
 }
 
 # Canonical key mappings for field name normalization
@@ -44,7 +45,11 @@ KEY_MAPPINGS = {
     "city": "location",
     "confirmation": "confirmation_number",
     "flight": "flight_number",
-    "seat": "seat_number"
+    "seat": "seat_number",
+    "speaker": "speaker_name",
+    "session": "topic",
+    "room": "conference_room_name",
+    "track": "track_name"
 }
 
 # Canonical value mappings for fuzzy matching
@@ -64,6 +69,12 @@ VALUE_MAPPINGS = {
         "tech": "Tech",
         "aviation": "Aviation",
         "aerospace": "Aviation"
+    },
+    "track_name": {
+        "ai": "Artificial Intelligence",
+        "ml": "Machine Learning",
+        "iot": "Internet of Things",
+        "blockchain": "Blockchain Technology"
     }
 }
 
@@ -75,7 +86,7 @@ def get_canonical_value(field: str, value: str, threshold: float = 80.0) -> Opti
     """Normalize field values using fuzzy matching if applicable."""
     if field not in FUZZY_FIELDS.get("customers", []) + FUZZY_FIELDS.get("users", []) + \
                     FUZZY_FIELDS.get("bookings", []) + FUZZY_FIELDS.get("flights", []) + \
-                    FUZZY_FIELDS.get("ib_businesses", []):
+                    FUZZY_FIELDS.get("ib_businesses", []) + FUZZY_FIELDS.get("conference_schedules", []):
         return value
     
     canonical_field = get_canonical_key(field)
