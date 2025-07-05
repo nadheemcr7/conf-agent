@@ -17,9 +17,7 @@ async def get_conference_sessions(
     conference_room_name: Optional[str] = None,
     track_name: Optional[str] = None,
     conference_date: Optional[str] = None,
-    time_range_start: Optional[str] = None,
-    time_range_end: Optional[str] = None,
-    limit: Optional[int] = None,
+    limit: Optional[int] = 10,
     context: Optional[AirlineAgentContext] = None
 ) -> str:
     """Fetch conference sessions with filtering."""
@@ -35,12 +33,9 @@ async def get_conference_sessions(
             filters["track_name"] = track_name
         if conference_date:
             filters["conference_date"] = conference_date
-        if time_range_start:
-            filters["start_time"] = time_range_start
-        if time_range_end:
-            filters["end_time"] = time_range_end
         
-        sessions = await db_client.query(
+        # Use synchronous query since Supabase Python client is sync
+        sessions = db_client.query(
             table_name="conference_schedules",
             filters=filters,
             order_by=[{"column": "conference_date"}, {"column": "start_time"}],
@@ -51,15 +46,15 @@ async def get_conference_sessions(
             logger.warning("❌ No conference sessions found")
             return "No conference sessions found matching the criteria."
         
-        result = f"Found {len(sessions)} conference sessions:\n\n"
-        for i, session in enumerate(sessions[:5], 1):  # Show top 5
+        result = f"**Aviation Tech Summit 2025 Sessions** ({len(sessions)} found):\n\n"
+        for i, session in enumerate(sessions[:5], 1):
             result += (
-                f"**{i}. {session.get('topic')}**\n"
-                f"   👤 Speaker: {session.get('speaker_name')}\n"
-                f"   📅 Date: {session.get('conference_date')}\n"
-                f"   🕐 Time: {session.get('start_time')}\n"
-                f"   📍 Room: {session.get('conference_room_name')}\n"
-                f"   🏷️ Track: {session.get('track_name')}\n\n"
+                f"**{i}. {session.get('topic', 'TBA')}**\n"
+                f"   👤 Speaker: {session.get('speaker_name', 'TBA')}\n"
+                f"   📅 Date: {session.get('conference_date', 'TBA')}\n"
+                f"   🕐 Time: {session.get('start_time', 'TBA')}\n"
+                f"   📍 Room: {session.get('conference_room_name', 'TBA')}\n"
+                f"   🏷️ Track: {session.get('track_name', 'TBA')}\n\n"
             )
         if len(sessions) > 5:
             result += f"...and {len(sessions) - 5} more sessions available."
@@ -77,13 +72,13 @@ async def get_conference_sessions(
 async def get_all_speakers(context: AirlineAgentContext) -> str:
     """Get all unique speakers."""
     try:
-        speakers = await db_client.query(
+        speakers = db_client.query(
             table_name="conference_schedules",
             select_fields="speaker_name"
         )
         if not speakers:
             logger.warning("❌ No speakers found")
-            return "No speakers found."
+            return "No speakers found in the conference database."
         
         unique_speakers = sorted(set(item["speaker_name"] for item in speakers if item.get("speaker_name")))
         logger.info(f"✅ Found {len(unique_speakers)} unique speakers")
@@ -104,13 +99,13 @@ async def get_all_speakers(context: AirlineAgentContext) -> str:
 async def get_all_tracks(context: AirlineAgentContext) -> str:
     """Get all unique tracks."""
     try:
-        tracks = await db_client.query(
+        tracks = db_client.query(
             table_name="conference_schedules",
             select_fields="track_name"
         )
         if not tracks:
             logger.warning("❌ No tracks found")
-            return "No tracks found."
+            return "No tracks found in the conference database."
         
         unique_tracks = sorted(set(item["track_name"] for item in tracks if item.get("track_name")))
         logger.info(f"✅ Found {len(unique_tracks)} unique tracks")
@@ -131,13 +126,13 @@ async def get_all_tracks(context: AirlineAgentContext) -> str:
 async def get_all_rooms(context: AirlineAgentContext) -> str:
     """Get all unique rooms."""
     try:
-        rooms = await db_client.query(
+        rooms = db_client.query(
             table_name="conference_schedules",
             select_fields="conference_room_name"
         )
         if not rooms:
             logger.warning("❌ No rooms found")
-            return "No rooms found."
+            return "No rooms found in the conference database."
         
         unique_rooms = sorted(set(item["conference_room_name"] for item in rooms if item.get("conference_room_name")))
         logger.info(f"✅ Found {len(unique_rooms)} unique rooms")
