@@ -1,4 +1,4 @@
-from context import AirlineAgentContext
+from context import AirlineAgentContext, BusinessDetails
 from context_utils import create_initial_context, load_user_context, load_customer_context
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -6,11 +6,11 @@ import logging
 import os
 from agents import Agent, Runner, function_tool
 from common_tools import get_booking_details
-from cancellation_agent_tools import cancel_flight
-from seat_booking_agent_tools import update_seat, display_seat_map
-from flight_status_agent_tools import flight_status_tool
+# from cancellation_agent_tools import cancel_flight
+# from seat_booking_agent_tools import update_seat, display_seat_map
+# from flight_status_agent_tools import flight_status_tool
 from schedule_agent_tools import get_conference_sessions, get_all_speakers, get_all_tracks, get_all_rooms
-from networking_agent_tools import search_businesses, get_user_businesses, display_business_form, add_business
+# from networking_agent_tools import search_businesses, get_user_businesses, display_business_form, add_business
 from semantic_mappings import SEMANTIC_MAPPINGS
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -80,7 +80,8 @@ conference_agent = Agent(
     instructions=(
         "You are a conference assistant for the Aviation Tech Summit 2025. Your role is to help users find conference sessions, "
         "speakers, tracks, or rooms based on their queries. Use the registration_id from the context to personalize responses. "
-        "If the user is not registered, suggest registration. Use the provided tools to fetch data and respond clearly."
+        "If the user is not registered, suggest registration. Use the provided tools to fetch data and respond clearly. "
+        "Always be helpful and provide detailed information about conference schedules, sessions, speakers, and tracks."
     ),
     tools=CONFERENCE_TOOLS,
     model="groq/llama3-8b-8192"
@@ -102,11 +103,10 @@ triage_agent = Agent(
     name="TriageAgent",
     instructions=(
         "You are a triage agent that routes user requests to the appropriate specialized agent. Analyze the user's message "
-        "and context to determine the intent. Use semantic mappings to identify relevant keywords or phrases. Route to:"
-        # "- CustomerServiceAgent for flight-related requests (e.g., booking, cancellation, seat changes, flight status)."
-        "- ConferenceAgent for conference-related requests (e.g., sessions, speakers, tracks, rooms)."
-        # "- NetworkingAgent for business or networking-related requests (e.g., business search, profile management)."
-        "If the intent is unclear, ask for clarification. Do not execute tools directly; delegate to the appropriate agent."
+        "and context to determine the intent. Use semantic mappings to identify relevant keywords or phrases. Route to: "
+        "- ConferenceAgent for conference-related requests (e.g., sessions, speakers, tracks, rooms, schedule, Aviation Tech Summit). "
+        "If the intent is unclear, ask for clarification. Do not execute tools directly; delegate to the appropriate agent. "
+        "Always be helpful and guide users to the right information."
     ),
     tools=[],
     model="groq/llama3-8b-8192"
@@ -129,19 +129,19 @@ async def create_context(
     
     # Load user context if registration_id is provided
     if registration_id:
-        ctx = await load_user_context(registration_id)
+        ctx = await load_user_context(str(registration_id))  # Convert to string
     
     # Load customer context if account_number is provided
     if account_number:
-        ctx = await load_customer_context(account_number)
+        ctx = await load_customer_context(str(account_number))  # Convert to string
     
     # Update context with additional fields
     if confirmation_number:
-        ctx.confirmation_number = confirmation_number
+        ctx.confirmation_number = str(confirmation_number)
     if user_id:
-        ctx.user_id = user_id
+        ctx.user_id = str(user_id)
     if organization_id:
-        ctx.organization_id = organization_id
+        ctx.organization_id = str(organization_id)
     
     logger.info(f"Context created: {ctx}")
     return ctx
@@ -178,6 +178,33 @@ async def chat(request: ChatRequest):
     try:
         logger.debug(f"Received chat request: {request}")
         
+        # Validate message is not empty
+        if not request.message or not request.message.strip():
+            return {
+                "response": "Please enter a message to get started. I can help you with conference information, sessions, speakers, and more!",
+                "agent": "TriageAgent",
+                "context": {},
+                "agents": [
+                    {
+                        "name": "TriageAgent",
+                        "description": "Routes requests to appropriate agents",
+                        "handoffs": ["ConferenceAgent"],
+                        "tools": [],
+                        "input_guardrails": []
+                    },
+                    {
+                        "name": "ConferenceAgent", 
+                        "description": "Handles conference-related queries",
+                        "handoffs": ["TriageAgent"],
+                        "tools": ["get_conference_sessions", "get_all_speakers", "get_all_tracks", "get_all_rooms"],
+                        "input_guardrails": []
+                    }
+                ],
+                "events": [],
+                "guardrails": [],
+                "customer_info": None
+            }
+        
         # Create context
         ctx = await create_context(
             confirmation_number=request.confirmation_number,
@@ -196,10 +223,53 @@ async def chat(request: ChatRequest):
         response = await runner.run(selected_agent, request.message, context=ctx)
         
         logger.info(f"Agent response: {response}")
-        return {"response": response}
+        
+        # Format response properly
+        return {
+            "response": response if isinstance(response, str) else str(response),
+            "agent": selected_agent.name,
+            "context": ctx.dict() if hasattr(ctx, 'dict') else {},
+            "agents": [
+                {
+                    "name": "TriageAgent",
+                    "description": "Routes requests to appropriate agents",
+                    "handoffs": ["ConferenceAgent"],
+                    "tools": [],
+                    "input_guardrails": []
+                },
+                {
+                    "name": "ConferenceAgent", 
+                    "description": "Handles conference-related queries",
+                    "handoffs": ["TriageAgent"],
+                    "tools": ["get_conference_sessions", "get_all_speakers", "get_all_tracks", "get_all_rooms"],
+                    "input_guardrails": []
+                }
+            ],
+            "events": [],
+            "guardrails": [],
+            "customer_info": {
+                "customer": {
+                    "name": getattr(ctx, 'passenger_name', None) or "Conference Attendee",
+                    "registration_id": getattr(ctx, 'registration_id', None),
+                    "email": getattr(ctx, 'customer_email', None),
+                    "is_conference_attendee": True,
+                    "conference_name": "Aviation Tech Summit 2025"
+                },
+                "bookings": []
+            }
+        }
     except Exception as e:
         logger.error(f"Error processing chat request: {e}", exc_info=True)
-        return {"error": str(e)}, 500
+        return {
+            "error": str(e),
+            "response": "I'm sorry, there was an error processing your request. Please try again.",
+            "agent": "System",
+            "context": {},
+            "agents": [],
+            "events": [],
+            "guardrails": [],
+            "customer_info": None
+        }
 
 # Updated: User endpoint to fetch user based on registration_id in details column
 @app.get("/user/{user_id}")

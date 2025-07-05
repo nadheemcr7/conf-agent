@@ -1,13 +1,29 @@
 from pydantic import BaseModel
+from typing import Optional, List
 
 class CustomerBooking(BaseModel):
-    confirmation_number: str
-    account_number: str
+    id: Optional[int] = None
+    confirmation_number: Optional[str] = None
+    customer_id: Optional[int] = None
+    flight_id: Optional[int] = None
+    flight_number: Optional[str] = None
+    seat_number: Optional[str] = None
+    booking_status: Optional[str] = None
+    origin: Optional[str] = None
+    destination: Optional[str] = None
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    account_number: Optional[str] = None
 
 class UserDetails(BaseModel):
-    user_id: str
-    registration_id: str
-    organization_id: str | None = None
+    user_id: Optional[str] = None
+    registration_id: Optional[str] = None
+    organization_id: Optional[str] = None
+    user_name: Optional[str] = None
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    email: Optional[str] = None
+    registered_email: Optional[str] = None
 
 class BusinessDetails(BaseModel):
     companyName: str
@@ -16,14 +32,39 @@ class BusinessDetails(BaseModel):
     positionTitle: str
     user_name: str
     email: str
+    subSector: Optional[str] = None
+    establishmentYear: Optional[str] = None
+    legalStructure: Optional[str] = None
+    briefDescription: Optional[str] = None
+    productsOrServices: Optional[str] = None
+    website: Optional[str] = None
+    annualTurnoverRange: Optional[str] = None
+    directEmployment: Optional[str] = None
+    indirectEmployment: Optional[str] = None
 
 class AirlineAgentContext(BaseModel):
-    confirmation_number: str | None = None
-    account_number: str | None = None
-    registration_id: str | None = None
-    user_id: str | None = None
-    business_details: BusinessDetails | None = None
-    organization_id: str | None = None
+    # User identification
+    confirmation_number: Optional[str] = None
+    account_number: Optional[str] = None
+    registration_id: Optional[str] = None
+    user_id: Optional[str] = None
+    organization_id: Optional[str] = None
+    
+    # Customer details
+    passenger_name: Optional[str] = None
+    customer_id: Optional[int] = None
+    customer_email: Optional[str] = None
+    
+    # Flight/booking details
+    flight_number: Optional[str] = None
+    flight_id: Optional[int] = None
+    seat_number: Optional[str] = None
+    booking_id: Optional[int] = None
+    
+    # Related data
+    customer_bookings: List[CustomerBooking] = []
+    user_details: Optional[UserDetails] = None
+    business_details: Optional[BusinessDetails] = None
 
     class Config:
-        extra = "forbid"  # Prevent extra fields
+        extra = "allow"  # Allow extra fields for flexibility

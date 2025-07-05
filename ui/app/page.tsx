@@ -31,9 +31,9 @@ export default function Home() {
     const data: ChatResponse = await callChatAPI("", "", identifier);
     
     if (data) {
-      setConversationId(data.conversation_id);
-      setCurrentAgent(data.current_agent);
-      setContext(data.context);
+      setConversationId(data.conversation_id || null);
+      setCurrentAgent(data.current_agent || data.agent || "TriageAgent");
+      setContext(data.context || {});
       const initialEvents = (data.events || []).map((e: any) => ({
         ...e,
         timestamp: e.timestamp ?? Date.now(),
@@ -63,13 +63,13 @@ export default function Home() {
 
       // Add welcome message with user info
       const details = userData.details || {};
-      const welcomeName = details.user_name || `${details.firstName || ''} ${details.lastName || ''}`.trim() || "Customer";
+      const welcomeName = details.user_name || `${details.firstName || ''} ${details.lastName || ''}`.trim() || "Conference Attendee";
 
       const welcomeMessage: Message = {
         id: Date.now().toString(),
-        content: `Welcome back, ${welcomeName}! I can help you with airline services, conference schedules, business networking, and more. How can I assist you today?`,
+        content: `Welcome back, ${welcomeName}! I can help you with Aviation Tech Summit 2025 conference information, including sessions, speakers, tracks, and schedules. How can I assist you today?`,
         role: "assistant",
-        agent: "Triage Agent",
+        agent: "TriageAgent",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, welcomeMessage]);
@@ -78,6 +78,8 @@ export default function Home() {
 
   // Send a user message
   const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return; // Don't send empty messages
+    
     const userMsg: Message = {
       id: Date.now().toString(),
       content,
@@ -108,7 +110,7 @@ export default function Home() {
     }
 
     if (!conversationId) setConversationId(data.conversation_id || null);
-    setCurrentAgent(data.current_agent || "");
+    setCurrentAgent(data.current_agent || data.agent || "TriageAgent");
     setContext(data.context || {});
     
     if (data.events) {
@@ -124,20 +126,20 @@ export default function Home() {
     // Update customerInfo state with the complete data from the API response on every message
     if (data.customer_info) {
       setCustomerInfo(data.customer_info);
-    } else {
-      setCustomerInfo(null);
     }
 
-    if (data.messages) {
-      const responses: Message[] = data.messages.map((m: any) => ({
-        id: Date.now().toString() + Math.random().toString(),
-        content: m.content,
-        role: "assistant",
-        agent: m.agent,
-        timestamp: new Date(),
-      }));
-      setMessages((prev) => [...prev, ...responses]);
-    }
+    // Handle response
+    const responseContent = data.response || "I'm sorry, I couldn't process your request.";
+    const responseAgent = data.agent || "TriageAgent";
+    
+    const responseMessage: Message = {
+      id: Date.now().toString() + Math.random().toString(),
+      content: responseContent,
+      role: "assistant",
+      agent: responseAgent,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, responseMessage]);
 
     setIsLoading(false);
   };
