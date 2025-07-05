@@ -9,44 +9,25 @@ async def create_initial_context() -> AirlineAgentContext:
     return AirlineAgentContext()
 
 async def load_user_context(registration_id: str) -> AirlineAgentContext:
-    """Load user context from Supabase based on registration_id."""
-    logger.debug(f"Loading context for registration_id: {registration_id}")
+    """Load user context from database."""
     ctx = await create_initial_context()
-    
-    if not registration_id:
-        return ctx
+    ctx.registration_id = registration_id
     
     try:
+        # Try to load user data
         response = db_client.table("users").select("id, details").filter("details->>registration_id", "eq", registration_id).execute()
-        users = response.data
-        if users:
-            user = users[0]
+        
+        if response.data:
+            user = response.data[0]
             ctx.user_id = user["id"]
-            ctx.registration_id = user["details"].get("registration_id", registration_id)
-        logger.info(f"Loaded context: {ctx}")
+            if user.get("details"):
+                details = user["details"]
+                ctx.passenger_name = details.get("user_name") or f"{details.get('firstName', '')} {details.get('lastName', '')}".strip()
+                ctx.customer_email = details.get("email")
+        
+        logger.info(f"Loaded context for registration_id: {registration_id}")
         return ctx
+        
     except Exception as e:
-        logger.error(f"Error loading user context: {e}", exc_info=True)
-        return ctx
-
-async def load_customer_context(account_number: str) -> AirlineAgentContext:
-    """Load customer context from Supabase based on account_number."""
-    logger.debug(f"Loading context for account_number: {account_number}")
-    ctx = await create_initial_context()
-    
-    if not account_number:
-        return ctx
-    
-    try:
-        response = db_client.table("users").select("id, confirmation_number, account_number").eq("account_number", account_number).execute()
-        users = response.data
-        if users:
-            user = users[0]
-            ctx.user_id = user["id"]
-            ctx.confirmation_number = user.get("confirmation_number")
-            ctx.account_number = user.get("account_number")
-        logger.info(f"Loaded context: {ctx}")
-        return ctx
-    except Exception as e:
-        logger.error(f"Error loading customer context: {e}", exc_info=True)
+        logger.warning(f"Could not load user context: {e}")
         return ctx
