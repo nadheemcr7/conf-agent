@@ -9,16 +9,17 @@ logger = logging.getLogger(__name__)
 
 @function_tool(
     name_override="get_conference_sessions",
-    description_override="Fetch conference sessions with filtering."
+    description_override="Fetch conference sessions with filtering.",
+    strict_json_schema=False  # Disable strict schema
 )
 async def get_conference_sessions(
     speaker_name: Optional[str] = None,
     topic: Optional[str] = None,
     conference_room_name: Optional[str] = None,
     track_name: Optional[str] = None,
-    conference_date: Optional[date] = None,
-    time_range_start: Optional[datetime] = None,
-    time_range_end: Optional[datetime] = None,
+    conference_date: Optional[str] = None,  # Changed from date to str
+    time_range_start: Optional[str] = None,  # Changed from datetime to str
+    time_range_end: Optional[str] = None,  # Changed from datetime to str
     limit: Optional[int] = None,
     context: Optional[AirlineAgentContext] = None
 ) -> str:
@@ -34,11 +35,11 @@ async def get_conference_sessions(
         if track_name:
             filters["track_name"] = track_name
         if conference_date:
-            filters["conference_date"] = conference_date.isoformat()
+            filters["conference_date"] = conference_date
         if time_range_start:
-            filters["start_time"] = time_range_start.isoformat()
+            filters["start_time"] = time_range_start
         if time_range_end:
-            filters["end_time"] = time_range_end.isoformat()
+            filters["end_time"] = time_range_end
         
         sessions = await db_client.query(
             table_name="conference_schedules",
@@ -52,13 +53,14 @@ async def get_conference_sessions(
             return "No conference sessions found matching the criteria."
         
         result = f"Found {len(sessions)} conference sessions:\n"
-        for i, session in enumerate(sessions[:3], 1):
+        for i, session in enumerate(sessions[:5], 1):  # Show top 5
             result += (
-                f"{i}. {session.get('topic')} by {session.get('speaker_name')} "
-                f"on {session.get('conference_date')} at {session.get('start_time')}\n"
+                f"{i}. **{session.get('topic')}** by {session.get('speaker_name')}\n"
+                f"   📅 {session.get('conference_date')} at {session.get('start_time')}\n"
+                f"   📍 {session.get('conference_room_name')} | Track: {session.get('track_name')}\n\n"
             )
-        if len(sessions) > 3:
-            result += f"...and {len(sessions) - 3} more."
+        if len(sessions) > 5:
+            result += f"...and {len(sessions) - 5} more sessions available."
         
         logger.info(f"✅ Found {len(sessions)} conference sessions")
         return result
@@ -68,7 +70,8 @@ async def get_conference_sessions(
 
 @function_tool(
     name_override="get_all_speakers",
-    description_override="Get all unique speakers."
+    description_override="Get all unique speakers.",
+    strict_json_schema=False  # Disable strict schema
 )
 async def get_all_speakers(context: AirlineAgentContext) -> str:
     """Get all unique speakers."""
@@ -83,14 +86,20 @@ async def get_all_speakers(context: AirlineAgentContext) -> str:
         
         unique_speakers = sorted(set(item["speaker_name"] for item in speakers if item.get("speaker_name")))
         logger.info(f"✅ Found {len(unique_speakers)} unique speakers")
-        return f"Available speakers: {', '.join(unique_speakers)}"
+        
+        result = f"**Aviation Tech Summit 2025 Speakers** ({len(unique_speakers)} total):\n\n"
+        for i, speaker in enumerate(unique_speakers, 1):
+            result += f"{i}. {speaker}\n"
+        
+        return result
     except Exception as e:
         logger.error(f"❌ Error fetching speakers: {e}", exc_info=True)
         return f"Error fetching speakers: {str(e)}"
 
 @function_tool(
     name_override="get_all_tracks",
-    description_override="Get all unique tracks."
+    description_override="Get all unique tracks.",
+    strict_json_schema=False  # Disable strict schema
 )
 async def get_all_tracks(context: AirlineAgentContext) -> str:
     """Get all unique tracks."""
@@ -105,14 +114,20 @@ async def get_all_tracks(context: AirlineAgentContext) -> str:
         
         unique_tracks = sorted(set(item["track_name"] for item in tracks if item.get("track_name")))
         logger.info(f"✅ Found {len(unique_tracks)} unique tracks")
-        return f"Available tracks: {', '.join(unique_tracks)}"
+        
+        result = f"**Aviation Tech Summit 2025 Tracks** ({len(unique_tracks)} total):\n\n"
+        for i, track in enumerate(unique_tracks, 1):
+            result += f"{i}. {track}\n"
+        
+        return result
     except Exception as e:
         logger.error(f"❌ Error fetching tracks: {e}", exc_info=True)
         return f"Error fetching tracks: {str(e)}"
 
 @function_tool(
     name_override="get_all_rooms",
-    description_override="Get all unique rooms."
+    description_override="Get all unique rooms.",
+    strict_json_schema=False  # Disable strict schema
 )
 async def get_all_rooms(context: AirlineAgentContext) -> str:
     """Get all unique rooms."""
@@ -127,7 +142,12 @@ async def get_all_rooms(context: AirlineAgentContext) -> str:
         
         unique_rooms = sorted(set(item["conference_room_name"] for item in rooms if item.get("conference_room_name")))
         logger.info(f"✅ Found {len(unique_rooms)} unique rooms")
-        return f"Available rooms: {', '.join(unique_rooms)}"
+        
+        result = f"**Aviation Tech Summit 2025 Rooms** ({len(unique_rooms)} total):\n\n"
+        for i, room in enumerate(unique_rooms, 1):
+            result += f"{i}. {room}\n"
+        
+        return result
     except Exception as e:
         logger.error(f"❌ Error fetching rooms: {e}", exc_info=True)
         return f"Error fetching rooms: {str(e)}"

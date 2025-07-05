@@ -15,6 +15,9 @@ class CustomerBooking(BaseModel):
     customer_email: Optional[str] = None
     account_number: Optional[str] = None
 
+    class Config:
+        extra = "forbid"  # Strict schema
+
 class UserDetails(BaseModel):
     user_id: Optional[str] = None
     registration_id: Optional[str] = None
@@ -24,6 +27,9 @@ class UserDetails(BaseModel):
     lastName: Optional[str] = None
     email: Optional[str] = None
     registered_email: Optional[str] = None
+
+    class Config:
+        extra = "forbid"  # Strict schema
 
 class BusinessDetails(BaseModel):
     companyName: str
@@ -41,6 +47,9 @@ class BusinessDetails(BaseModel):
     annualTurnoverRange: Optional[str] = None
     directEmployment: Optional[str] = None
     indirectEmployment: Optional[str] = None
+
+    class Config:
+        extra = "forbid"  # Strict schema
 
 class AirlineAgentContext(BaseModel):
     # User identification
@@ -67,4 +76,4 @@ class AirlineAgentContext(BaseModel):
     business_details: Optional[BusinessDetails] = None
 
     class Config:
-        extra = "allow"  # Allow extra fields for flexibility
+        extra = "forbid"  # Strict schema for agents library

@@ -4,8 +4,9 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import logging
 import os
-from agents import Agent, Runner, function_tool
-from common_tools import get_booking_details
+from dotenv import load_dotenv
+from agents import Agent, Runner
+# from common_tools import get_booking_details
 # from cancellation_agent_tools import cancel_flight
 # from seat_booking_agent_tools import update_seat, display_seat_map
 # from flight_status_agent_tools import flight_status_tool
@@ -13,6 +14,9 @@ from schedule_agent_tools import get_conference_sessions, get_all_speakers, get_
 # from networking_agent_tools import search_businesses, get_user_businesses, display_business_form, add_business
 from semantic_mappings import SEMANTIC_MAPPINGS
 from fastapi.middleware.cors import CORSMiddleware
+
+# Load environment variables
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +43,6 @@ app.add_middleware(
 )
 
 # Define agent tools
-# CUSTOMER_SERVICE_TOOLS = [
-#     get_booking_details,
-#     cancel_flight,
-#     update_seat,
-#     display_seat_map,
-#     flight_status_tool,
-# ]
-
 CONFERENCE_TOOLS = [
     get_conference_sessions,
     get_all_speakers,
@@ -54,50 +50,19 @@ CONFERENCE_TOOLS = [
     get_all_rooms,
 ]
 
-# NETWORKING_TOOLS = [
-#     search_businesses,
-#     get_user_businesses,
-#     display_business_form,
-#     add_business,
-# ]
-
 # Define agents
-# customer_service_agent = Agent(
-#     name="CustomerServiceAgent",
-#     instructions=(
-#         "You are a customer service agent for an airline. Your role is to assist users with flight-related requests, "
-#         "such as retrieving booking details, canceling flights, updating seats, or checking flight status. Always verify "
-#         "user information using the provided context (e.g., confirmation_number, account_number). If the user provides "
-#         "insufficient information, request clarification. Use the provided tools to fetch or update data and respond in a "
-#         "professional, concise manner."
-#     ),
-#     tools=CUSTOMER_SERVICE_TOOLS,
-#     model="groq/llama3-8b-8192"
-# )
-
 conference_agent = Agent(
     name="ConferenceAgent",
     instructions=(
         "You are a conference assistant for the Aviation Tech Summit 2025. Your role is to help users find conference sessions, "
         "speakers, tracks, or rooms based on their queries. Use the registration_id from the context to personalize responses. "
         "If the user is not registered, suggest registration. Use the provided tools to fetch data and respond clearly. "
-        "Always be helpful and provide detailed information about conference schedules, sessions, speakers, and tracks."
+        "Always be helpful and provide detailed information about conference schedules, sessions, speakers, and tracks. "
+        "Format your responses in a clear, organized manner with proper headings and bullet points when appropriate."
     ),
     tools=CONFERENCE_TOOLS,
     model="groq/llama3-8b-8192"
 )
-
-# networking_agent = Agent(
-#     name="NetworkingAgent",
-#     instructions=(
-#         "You are a networking assistant for the Aviation Tech Summit 2025. Your role is to help users find businesses, "
-#         "manage their business profiles, or register new businesses. Use the user_id and organization_id from the context "
-#         "to personalize responses. If the user provides business details, validate and process them using the provided tools. "
-#         "Respond professionally and concisely."
-#     ),
-#     tools=NETWORKING_TOOLS,
-#     model="groq/llama3-8b-8192"
-# )
 
 triage_agent = Agent(
     name="TriageAgent",
@@ -106,7 +71,7 @@ triage_agent = Agent(
         "and context to determine the intent. Use semantic mappings to identify relevant keywords or phrases. Route to: "
         "- ConferenceAgent for conference-related requests (e.g., sessions, speakers, tracks, rooms, schedule, Aviation Tech Summit). "
         "If the intent is unclear, ask for clarification. Do not execute tools directly; delegate to the appropriate agent. "
-        "Always be helpful and guide users to the right information."
+        "Always be helpful and guide users to the right information. For conference-related queries, hand off to the ConferenceAgent."
     ),
     tools=[],
     model="groq/llama3-8b-8192"
@@ -146,7 +111,7 @@ async def create_context(
     logger.info(f"Context created: {ctx}")
     return ctx
 
-# Initialize Runner without arguments
+# Initialize Runner
 runner = Runner()
 
 # Define semantic routing logic
@@ -158,12 +123,8 @@ def route_request(message: str, ctx: AirlineAgentContext) -> Agent:
         for keyword in mappings.get("keywords", []):
             if keyword.lower() in message_lower:
                 logger.debug(f"Matched intent '{intent}' with keyword '{keyword}'")
-                # if intent == "customer_service":
-                #     return customer_service_agent
                 if intent == "conference":
                     return conference_agent
-                # elif intent == "networking":
-                #     return networking_agent
     
     logger.debug("No specific intent matched, defaulting to triage_agent")
     return triage_agent
@@ -181,7 +142,7 @@ async def chat(request: ChatRequest):
         # Validate message is not empty
         if not request.message or not request.message.strip():
             return {
-                "response": "Please enter a message to get started. I can help you with conference information, sessions, speakers, and more!",
+                "response": "Please enter a message to get started. I can help you with Aviation Tech Summit 2025 conference information, including sessions, speakers, tracks, and schedules!",
                 "agent": "TriageAgent",
                 "context": {},
                 "agents": [
